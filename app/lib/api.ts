@@ -1,5 +1,6 @@
 const BASE_URL =
-  process.env.VITE_API_BASE_URL || "https://laptophub.autoqueue.systems/api";
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://laptophub.autoqueue.systems/api";
 
 export interface LaptopImage {
   image: string;

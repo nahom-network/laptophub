@@ -755,20 +755,6 @@ export default function Home() {
           </AnimatePresence>
         </div>
       </main>
-
-      <footer className="border-t border-border/60 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between text-[11px] font-mono text-muted-foreground">
-          <span>LaptopHub</span>
-          <a
-            href="https://laptophub.autoqueue.systems"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-primary transition-colors"
-          >
-            laptophub.autoqueue.systems
-          </a>
-        </div>
-      </footer>
     </div>
   );
 }
