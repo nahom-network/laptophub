@@ -32,10 +32,11 @@ import {
 
 export function meta() {
   return [
-    { title: "LaptopHub  Find Your Next Machine" },
+    { title: "LaptopHub - Find Your Next Machine in Ethiopia" },
     {
       name: "description",
-      content: "Browse laptops from Telegram channels in Ethiopia",
+      content:
+        "Browse laptops from Telegram channels in Ethiopia and compare the best options in one place.",
     },
   ];
 }
