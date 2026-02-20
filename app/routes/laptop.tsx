@@ -17,6 +17,10 @@ import {
   MessageCircle,
   ExternalLink,
   ZoomIn,
+  Send,
+  LogIn,
+  LogOut,
+  CheckCircle2,
 } from "lucide-react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -31,6 +35,7 @@ import {
   type SimilarItem,
 } from "../lib/api";
 import { useNavigate } from "react-router";
+import { useAuth } from "../lib/auth";
 
 function useDarkMode() {
   const [dark, setDark] = useState(() => {
@@ -364,6 +369,111 @@ function SimilarCard({ item, index }: { item: SimilarItem; index: number }) {
   );
 }
 
+/*  Review Form  */
+function ReviewForm({
+  uuid,
+  token,
+  onSuccess,
+}: {
+  uuid: string;
+  token: string;
+  onSuccess: () => void;
+}) {
+  const [rating, setRating] = useState(0);
+  const [hovered, setHovered] = useState(0);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!rating) {
+      setError("Please select a star rating.");
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.reviews.create(uuid, token, {
+        rating,
+        comment: comment.trim() || undefined,
+      });
+      setDone(true);
+      onSuccess();
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Failed to submit. Try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-accent font-semibold py-2">
+        <CheckCircle2 size={14} />
+        Your review was submitted — thank you!
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Star selector */}
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setRating(n)}
+            onMouseEnter={() => setHovered(n)}
+            onMouseLeave={() => setHovered(0)}
+            className={`text-2xl leading-none transition-colors ${
+              n <= (hovered || rating) ? "text-primary" : "text-foreground/15"
+            }`}
+            aria-label={`${n} star`}
+          >
+            ★
+          </button>
+        ))}
+        {rating > 0 && (
+          <span className="ml-2 text-xs font-mono text-muted-foreground">
+            {["Poor", "Fair", "Good", "Great", "Excellent"][rating - 1]}
+          </span>
+        )}
+      </div>
+
+      {/* Comment */}
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Share your thoughts (optional)"
+        rows={3}
+        className="w-full px-3 py-2.5 text-sm rounded-xl border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/50 resize-none text-foreground placeholder:text-muted-foreground font-sans"
+      />
+
+      {error && (
+        <p className="flex items-center gap-1.5 text-xs text-destructive">
+          <AlertCircle size={12} />
+          {error}
+        </p>
+      )}
+
+      <Button
+        type="submit"
+        size="sm"
+        disabled={submitting || !rating}
+        className="gap-1.5"
+      >
+        <Send size={12} />
+        {submitting ? "Submitting…" : "Submit Review"}
+      </Button>
+    </form>
+  );
+}
+
 /*  Main  */
 export function meta({ data }: { data?: { laptop?: LaptopPost } }) {
   if (!data?.laptop) return [{ title: "LaptopHub" }];
@@ -373,10 +483,20 @@ export function meta({ data }: { data?: { laptop?: LaptopPost } }) {
 export default function LaptopDetail() {
   const { uuid } = useParams();
   const { dark, toggle: toggleDark } = useDarkMode();
+  const { user, accessToken, isAuthenticated, logout } = useAuth();
   const [laptop, setLaptop] = useState<LaptopPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const refetchLaptop = useCallback(() => {
+    if (!uuid) return;
+    api.laptops
+      .retrieve(uuid)
+      .then(setLaptop)
+      .catch(() => {});
+  }, [uuid]);
+
   useEffect(() => {
     if (!uuid) return;
     setLoading(true);
@@ -461,7 +581,31 @@ export default function LaptopDetail() {
           </div>
           LaptopHub
         </Link>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          {isAuthenticated ? (
+            <>
+              <span className="hidden sm:block text-[11px] font-mono text-muted-foreground max-w-35 truncate">
+                {user?.email}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs text-muted-foreground hover:text-foreground gap-1 px-2"
+                onClick={logout}
+              >
+                <LogOut size={12} />
+                <span className="hidden sm:block">Logout</span>
+              </Button>
+            </>
+          ) : (
+            <Link
+              to="/login"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors h-8 px-2"
+            >
+              <LogIn size={12} />
+              <span className="hidden sm:block">Login</span>
+            </Link>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -564,25 +708,53 @@ export default function LaptopDetail() {
               </motion.section>
             )}
 
-            {laptop.reviews && laptop.reviews.length > 0 && (
-              <motion.section
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-                    Reviews
-                  </h2>
-                  <Stars rating={avgRating} large />
+            <motion.section
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="space-y-8"
+            >
+              {/* Existing reviews */}
+              {(laptop.reviews ?? []).length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                      Reviews
+                    </h2>
+                    <Stars rating={avgRating} large />
+                  </div>
+                  <div className="space-y-3">
+                    {laptop.reviews.map((rev, i) => (
+                      <ReviewCard key={rev.id ?? i} review={rev} index={i} />
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  {laptop.reviews.map((rev, i) => (
-                    <ReviewCard key={rev.id ?? i} review={rev} index={i} />
-                  ))}
-                </div>
-              </motion.section>
-            )}
+              )}
+
+              {/* Write a review */}
+              <div>
+                <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">
+                  Write a Review
+                </h2>
+                {isAuthenticated ? (
+                  <ReviewForm
+                    uuid={uuid!}
+                    token={accessToken!}
+                    onSuccess={refetchLaptop}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    <Link
+                      to="/login"
+                      className="text-primary hover:underline underline-offset-2 font-medium"
+                    >
+                      Log in
+                    </Link>{" "}
+                    to leave a review.
+                  </p>
+                )}
+              </div>
+            </motion.section>
 
             {laptop.simmilar_items && laptop.simmilar_items.length > 0 && (
               <motion.section

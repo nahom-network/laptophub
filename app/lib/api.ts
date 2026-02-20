@@ -88,10 +88,58 @@ export interface PaginatedChatList {
   results: Chat[];
 }
 
+export interface RegisterData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number?: string;
+  password: string;
+}
+
+export interface TokenResponse {
+  access: string;
+  refresh: string;
+}
+
 async function fetchJSON<T>(url: string): Promise<T> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json() as Promise<T>;
+}
+
+async function postJSON<T>(
+  path: string,
+  body: unknown,
+  token?: string,
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    const firstMsg =
+      Object.values(err)
+        .flat()
+        .find((v): v is string => typeof v === "string") ??
+      `HTTP ${res.status}`;
+    throw new Error(firstMsg);
+  }
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
+}
+
+async function deleteJSON(path: string, token: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
 export const api = {
@@ -117,5 +165,20 @@ export const api = {
       fetchJSON<PaginatedLaptopPostList>(
         `${BASE_URL}/chat/${channelId}?page=${page}`,
       ),
+  },
+  auth: {
+    register: (data: RegisterData) =>
+      postJSON<{ email: string }>("/auth/register/", data),
+    login: (email: string, password: string) =>
+      postJSON<TokenResponse>("/token/", { email, password }),
+  },
+  reviews: {
+    create: (
+      uuid: string,
+      token: string,
+      data: { rating: number; comment?: string },
+    ) => postJSON<Review>(`/laptops/${uuid}/reviews/`, data, token),
+    destroy: (id: number, token: string) =>
+      deleteJSON(`/reviews/${id}/`, token),
   },
 };

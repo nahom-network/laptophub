@@ -10,6 +10,7 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import Footer from "./components/footer";
+import { AuthProvider } from "./lib/auth";
 
 const SITE_NAME = "LaptopHub";
 const SITE_URL = "https://laptophub.pro.et";
@@ -87,7 +88,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return (
+    <AuthProvider>
+      <Outlet />
+    </AuthProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
