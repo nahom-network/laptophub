@@ -40,12 +40,14 @@ export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const { accessToken } = useAuth();
 
-  // ?token=... triggers auto-verification
+  // ?uid=...&token=... from the email link triggers auto-verification
   // ?email=... comes from register flow to show the landing state
   const tokenParam = searchParams.get("token");
+  const uidParam = searchParams.get("uid") ?? "";
   const emailParam = searchParams.get("email") ?? "";
 
   const [manualToken, setManualToken] = useState(tokenParam ?? "");
+  const [manualUid, setManualUid] = useState(uidParam ?? "");
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
@@ -54,12 +56,12 @@ export default function VerifyEmailPage() {
   const [resent, setResent] = useState(false);
   const [resendError, setResendError] = useState<string | null>(null);
 
-  // Auto-verify if token is in the URL
+  // Auto-verify if uid+token are in the URL
   useEffect(() => {
-    if (!tokenParam) return;
+    if (!tokenParam || !uidParam) return;
     setVerifying(true);
     api.auth
-      .verifyEmail(tokenParam)
+      .verifyEmail(uidParam, tokenParam)
       .then(() => setVerified(true))
       .catch((err: unknown) =>
         setVerifyError(
@@ -69,14 +71,14 @@ export default function VerifyEmailPage() {
         ),
       )
       .finally(() => setVerifying(false));
-  }, [tokenParam]);
+  }, [tokenParam, uidParam]);
 
   async function handleManualVerify(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setVerifying(true);
     setVerifyError(null);
     try {
-      await api.auth.verifyEmail(manualToken.trim());
+      await api.auth.verifyEmail(manualUid.trim(), manualToken.trim());
       setVerified(true);
     } catch (err: unknown) {
       setVerifyError(
@@ -201,6 +203,8 @@ export default function VerifyEmailPage() {
                   Enter your token manually below, or request a new link.
                 </p>
                 <ManualTokenForm
+                  uid={manualUid}
+                  setUid={setManualUid}
                   token={manualToken}
                   setToken={setManualToken}
                   onSubmit={handleManualVerify}
@@ -241,6 +245,8 @@ export default function VerifyEmailPage() {
                     Or enter your token
                   </p>
                   <ManualTokenForm
+                    uid={manualUid}
+                    setUid={setManualUid}
                     token={manualToken}
                     setToken={setManualToken}
                     onSubmit={handleManualVerify}
@@ -303,12 +309,16 @@ export default function VerifyEmailPage() {
 }
 
 function ManualTokenForm({
+  uid,
+  setUid,
   token,
   setToken,
   onSubmit,
   verifying,
   error,
 }: {
+  uid: string;
+  setUid: (v: string) => void;
   token: string;
   setToken: (v: string) => void;
   onSubmit: (e: React.SyntheticEvent<HTMLFormElement>) => void;
@@ -317,6 +327,14 @@ function ManualTokenForm({
 }) {
   return (
     <form onSubmit={onSubmit} className="space-y-3">
+      <Input
+        type="text"
+        value={uid}
+        onChange={(e) => setUid(e.target.value)}
+        placeholder="Paste UID from link"
+        className="h-10 bg-muted/40 border-border/60 focus:border-primary/50 font-mono text-sm"
+        required
+      />
       <Input
         type="text"
         value={token}
@@ -339,7 +357,7 @@ function ManualTokenForm({
         type="submit"
         size="sm"
         className="w-full h-9 font-semibold"
-        disabled={verifying || !token.trim()}
+        disabled={verifying || !uid.trim() || !token.trim()}
       >
         {verifying ? "Verifying…" : "Verify email"}
       </Button>

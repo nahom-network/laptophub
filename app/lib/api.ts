@@ -218,8 +218,8 @@ export const api = {
       uid: string;
       new_password: string;
     }) => postJSON<void>("/auth/password/reset/confirm/", data),
-    verifyEmail: (token: string) =>
-      postJSON<void>("/auth/email/verify/", { token }),
+    verifyEmail: (uid: string, token: string) =>
+      postJSON<void>("/auth/email/verify/", { uid, token }),
     resendVerification: (accessToken: string) =>
       postJSON<void>("/auth/email/resend/", {}, accessToken),
   },
