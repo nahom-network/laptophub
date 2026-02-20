@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -106,7 +106,7 @@ function LaptopCard({ laptop, index }: { laptop: LaptopPost; index: number }) {
       className="group"
     >
       <Link
-        to={`/laptops/${laptop.id}`}
+        to={`/laptops/${laptop.uuid}`}
         prefetch="intent"
         className="block h-full"
       >
@@ -304,28 +304,41 @@ function ChannelCard({ chat, index }: { chat: Chat; index: number }) {
 /*  Main  */
 export default function Home() {
   const { dark, toggle: toggleDark } = useDarkMode();
-  const [tab, setTab] = useState<"laptops" | "channels">("laptops");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const tab = (searchParams.get("tab") as "laptops" | "channels") ?? "laptops";
+  const laptopPage = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+  const chatPage = Math.max(1, parseInt(searchParams.get("cpage") ?? "1", 10));
+  const query = searchParams.get("q") ?? "";
 
   const [laptopData, setLaptopData] = useState<PaginatedLaptopPostList | null>(
     null,
   );
-  const [laptopPage, setLaptopPage] = useState(1);
   const [laptopLoading, setLaptopLoading] = useState(true);
   const [laptopError, setLaptopError] = useState<string | null>(null);
 
   const [chatData, setChatData] = useState<PaginatedChatList | null>(null);
-  const [chatPage, setChatPage] = useState(1);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
 
-  const [searchInput, setSearchInput] = useState("");
-  const [query, setQuery] = useState("");
+  const [searchInput, setSearchInput] = useState(query);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const t = setTimeout(() => {
-      setQuery(searchInput);
-      setLaptopPage(1);
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (searchInput.trim()) {
+            next.set("q", searchInput.trim());
+          } else {
+            next.delete("q");
+          }
+          next.delete("page");
+          return next;
+        },
+        { replace: true },
+      );
     }, 450);
     return () => clearTimeout(t);
   }, [searchInput]);
@@ -405,7 +418,18 @@ export default function Home() {
                   />
                   {searchInput && (
                     <button
-                      onClick={() => setSearchInput("")}
+                      onClick={() => {
+                        setSearchInput("");
+                        setSearchParams(
+                          (prev) => {
+                            const next = new URLSearchParams(prev);
+                            next.delete("q");
+                            next.delete("page");
+                            return next;
+                          },
+                          { replace: true },
+                        );
+                      }}
                       aria-label="Clear search"
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
@@ -532,7 +556,16 @@ export default function Home() {
             {(["laptops", "channels"] as const).map((t) => (
               <button
                 key={t}
-                onClick={() => setTab(t)}
+                onClick={() =>
+                  setSearchParams(
+                    (prev) => {
+                      const next = new URLSearchParams(prev);
+                      next.set("tab", t);
+                      return next;
+                    },
+                    { replace: true },
+                  )
+                }
                 className={`relative flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold font-display transition-all duration-200 ${
                   tab === t
                     ? "text-foreground"
@@ -580,7 +613,14 @@ export default function Home() {
                       className="text-destructive hover:text-destructive"
                       onClick={() => {
                         setLaptopError(null);
-                        setLaptopPage(1);
+                        setSearchParams(
+                          (prev) => {
+                            const next = new URLSearchParams(prev);
+                            next.delete("page");
+                            return next;
+                          },
+                          { replace: true },
+                        );
                       }}
                     >
                       Retry
@@ -602,7 +642,18 @@ export default function Home() {
                       <span className="text-primary">{query}</span>&rdquo;
                     </span>
                     <button
-                      onClick={() => setSearchInput("")}
+                      onClick={() => {
+                        setSearchInput("");
+                        setSearchParams(
+                          (prev) => {
+                            const next = new URLSearchParams(prev);
+                            next.delete("q");
+                            next.delete("page");
+                            return next;
+                          },
+                          { replace: true },
+                        );
+                      }}
                       className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
                     >
                       clear
@@ -617,7 +668,7 @@ export default function Home() {
                       ))
                     : (laptopData?.results ?? []).length > 0
                       ? (laptopData?.results ?? []).map((l, i) => (
-                          <LaptopCard key={l.id} laptop={l} index={i} />
+                          <LaptopCard key={l.uuid} laptop={l} index={i} />
                         ))
                       : !laptopError && (
                           <div className="col-span-full py-24 text-center">
@@ -639,7 +690,16 @@ export default function Home() {
                       variant="outline"
                       size="sm"
                       disabled={laptopPage <= 1}
-                      onClick={() => setLaptopPage((p) => p - 1)}
+                      onClick={() =>
+                        setSearchParams(
+                          (prev) => {
+                            const next = new URLSearchParams(prev);
+                            next.set("page", String(laptopPage - 1));
+                            return next;
+                          },
+                          { replace: true },
+                        )
+                      }
                       className="gap-1.5"
                     >
                       <ChevronLeft size={14} />
@@ -652,7 +712,16 @@ export default function Home() {
                       variant="outline"
                       size="sm"
                       disabled={laptopPage >= ltPages}
-                      onClick={() => setLaptopPage((p) => p + 1)}
+                      onClick={() =>
+                        setSearchParams(
+                          (prev) => {
+                            const next = new URLSearchParams(prev);
+                            next.set("page", String(laptopPage + 1));
+                            return next;
+                          },
+                          { replace: true },
+                        )
+                      }
                       className="gap-1.5"
                     >
                       Next
@@ -684,7 +753,14 @@ export default function Home() {
                       className="text-destructive hover:text-destructive"
                       onClick={() => {
                         setChatError(null);
-                        setChatPage(1);
+                        setSearchParams(
+                          (prev) => {
+                            const next = new URLSearchParams(prev);
+                            next.delete("cpage");
+                            return next;
+                          },
+                          { replace: true },
+                        );
                       }}
                     >
                       Retry
@@ -730,7 +806,16 @@ export default function Home() {
                       variant="outline"
                       size="sm"
                       disabled={chatPage <= 1}
-                      onClick={() => setChatPage((p) => p - 1)}
+                      onClick={() =>
+                        setSearchParams(
+                          (prev) => {
+                            const next = new URLSearchParams(prev);
+                            next.set("cpage", String(chatPage - 1));
+                            return next;
+                          },
+                          { replace: true },
+                        )
+                      }
                       className="gap-1.5"
                     >
                       <ChevronLeft size={14} />
@@ -743,7 +828,16 @@ export default function Home() {
                       variant="outline"
                       size="sm"
                       disabled={chatPage >= chPages}
-                      onClick={() => setChatPage((p) => p + 1)}
+                      onClick={() =>
+                        setSearchParams(
+                          (prev) => {
+                            const next = new URLSearchParams(prev);
+                            next.set("cpage", String(chatPage + 1));
+                            return next;
+                          },
+                          { replace: true },
+                        )
+                      }
                       className="gap-1.5"
                     >
                       Next

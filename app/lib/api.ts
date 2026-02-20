@@ -15,7 +15,7 @@ export interface Review {
 }
 
 export interface LaptopPost {
-  id: number;
+  uuid: string;
   title: string;
   storage?: string | null;
   processor?: string | null;
@@ -39,7 +39,7 @@ export interface LaptopPost {
 export interface SimilarItem {
   score: number;
   similar_laptop: {
-    id: number;
+    uuid: string;
     title: string;
     storage?: string | null;
     processor?: string | null;
@@ -103,8 +103,8 @@ export const api = {
         `${BASE_URL}/laptops/?${params}`,
       );
     },
-    retrieve: (id: number) =>
-      fetchJSON<LaptopPost>(`${BASE_URL}/laptops/${id}/`),
+    retrieve: (uuid: string) =>
+      fetchJSON<LaptopPost>(`${BASE_URL}/laptops/${uuid}/`),
   },
   chats: {
     list: (page = 1) =>

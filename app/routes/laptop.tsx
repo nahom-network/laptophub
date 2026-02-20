@@ -290,7 +290,7 @@ function SimilarCard({ item, index }: { item: SimilarItem; index: number }) {
       className="group"
     >
       <Link
-        to={`/laptops/${l.id}`}
+        to={`/laptops/${l.uuid}`}
         prefetch="intent"
         className="flex gap-3 items-start p-3 rounded-xl border border-border/50 hover:border-primary/40 hover:bg-muted/50 transition-all duration-200"
       >
@@ -371,22 +371,22 @@ export function meta({ data }: { data?: { laptop?: LaptopPost } }) {
 }
 
 export default function LaptopDetail() {
-  const { id } = useParams();
+  const { uuid } = useParams();
   const { dark, toggle: toggleDark } = useDarkMode();
   const [laptop, setLaptop] = useState<LaptopPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   useEffect(() => {
-    if (!id) return;
+    if (!uuid) return;
     setLoading(true);
     setError(null);
     api.laptops
-      .retrieve(Number(id))
+      .retrieve(uuid)
       .then(setLaptop)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [uuid]);
 
   const channelId = laptop ? extractChannelId(laptop.channel) : null;
   const price = formatPrice(laptop?.price);
@@ -596,7 +596,7 @@ export default function LaptopDetail() {
                 <div className="space-y-2">
                   {laptop.simmilar_items.map((item, i) => (
                     <SimilarCard
-                      key={item.similar_laptop.id}
+                      key={item.similar_laptop.uuid}
                       item={item}
                       index={i}
                     />

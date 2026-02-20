@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router";
+import { useParams, Link, useSearchParams } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -86,7 +86,7 @@ function PostCard({ laptop, index }: { laptop: LaptopPost; index: number }) {
       className="group"
     >
       <Link
-        to={`/laptops/${laptop.id}`}
+        to={`/laptops/${laptop.uuid}`}
         prefetch="intent"
         className="block h-full"
       >
@@ -190,8 +190,10 @@ export default function ChannelDetail() {
   const [channelLoading, setChannelLoading] = useState(true);
   const [channelError, setChannelError] = useState<string | null>(null);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const postsPage = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+
   const [posts, setPosts] = useState<PaginatedLaptopPostList | null>(null);
-  const [postsPage, setPostsPage] = useState(1);
   const [postsLoading, setPostsLoading] = useState(true);
   const [postsError, setPostsError] = useState<string | null>(null);
 
@@ -427,7 +429,14 @@ export default function ChannelDetail() {
               className="text-destructive"
               onClick={() => {
                 setPostsError(null);
-                setPostsPage(1);
+                setSearchParams(
+                  (prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.delete("page");
+                    return next;
+                  },
+                  { replace: true },
+                );
               }}
             >
               Retry
@@ -440,7 +449,7 @@ export default function ChannelDetail() {
             ? Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)
             : (posts?.results ?? []).length > 0
               ? (posts?.results ?? []).map((l, i) => (
-                  <PostCard key={l.id} laptop={l} index={i} />
+                  <PostCard key={l.uuid} laptop={l} index={i} />
                 ))
               : !postsError && (
                   <div className="col-span-full py-24 text-center">
@@ -462,7 +471,16 @@ export default function ChannelDetail() {
               variant="outline"
               size="sm"
               disabled={postsPage <= 1}
-              onClick={() => setPostsPage((p) => p - 1)}
+              onClick={() =>
+                setSearchParams(
+                  (prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.set("page", String(postsPage - 1));
+                    return next;
+                  },
+                  { replace: true },
+                )
+              }
               className="gap-1.5"
             >
               <ChevronLeft size={14} />
@@ -475,7 +493,16 @@ export default function ChannelDetail() {
               variant="outline"
               size="sm"
               disabled={postsPage >= totalPages}
-              onClick={() => setPostsPage((p) => p + 1)}
+              onClick={() =>
+                setSearchParams(
+                  (prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.set("page", String(postsPage + 1));
+                    return next;
+                  },
+                  { replace: true },
+                )
+              }
               className="gap-1.5"
             >
               Next
