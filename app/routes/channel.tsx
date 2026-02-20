@@ -478,7 +478,7 @@ export default function ChannelDetail() {
                     next.set("page", String(postsPage - 1));
                     return next;
                   },
-                  { replace: true },
+                  { replace: true, preventScrollReset: true },
                 )
               }
               className="gap-1.5"
@@ -500,7 +500,7 @@ export default function ChannelDetail() {
                     next.set("page", String(postsPage + 1));
                     return next;
                   },
-                  { replace: true },
+                  { replace: true, preventScrollReset: true },
                 )
               }
               className="gap-1.5"

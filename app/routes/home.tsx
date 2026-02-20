@@ -323,8 +323,13 @@ export default function Home() {
 
   const [searchInput, setSearchInput] = useState(query);
   const searchRef = useRef<HTMLInputElement>(null);
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     const t = setTimeout(() => {
       setSearchParams(
         (prev) => {
@@ -341,7 +346,7 @@ export default function Home() {
       );
     }, 450);
     return () => clearTimeout(t);
-  }, [searchInput]);
+  }, [searchInput]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (tab !== "laptops") return;
@@ -697,7 +702,7 @@ export default function Home() {
                             next.set("page", String(laptopPage - 1));
                             return next;
                           },
-                          { replace: true },
+                          { replace: true, preventScrollReset: true },
                         )
                       }
                       className="gap-1.5"
@@ -719,7 +724,7 @@ export default function Home() {
                             next.set("page", String(laptopPage + 1));
                             return next;
                           },
-                          { replace: true },
+                          { replace: true, preventScrollReset: true },
                         )
                       }
                       className="gap-1.5"
@@ -813,7 +818,7 @@ export default function Home() {
                             next.set("cpage", String(chatPage - 1));
                             return next;
                           },
-                          { replace: true },
+                          { replace: true, preventScrollReset: true },
                         )
                       }
                       className="gap-1.5"
@@ -835,7 +840,7 @@ export default function Home() {
                             next.set("cpage", String(chatPage + 1));
                             return next;
                           },
-                          { replace: true },
+                          { replace: true, preventScrollReset: true },
                         )
                       }
                       className="gap-1.5"
