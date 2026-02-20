@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
 import {
@@ -31,6 +31,8 @@ function useDarkMode() {
   return { dark, toggle };
 }
 
+const RESEND_COOLDOWN = 120;
+
 export function meta() {
   return [{ title: "Verify Email — LaptopHub" }];
 }
@@ -55,6 +57,22 @@ export default function VerifyEmailPage() {
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
   const [resendError, setResendError] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(RESEND_COOLDOWN);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Start cooldown countdown on mount
+  useEffect(() => {
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((s) => {
+        if (s <= 1) {
+          clearInterval(cooldownRef.current!);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(cooldownRef.current!);
+  }, []);
 
   // Auto-verify if uid+token are in the URL
   useEffect(() => {
@@ -99,6 +117,17 @@ export default function VerifyEmailPage() {
     try {
       await api.auth.resendVerification(accessToken);
       setResent(true);
+      // Reset cooldown
+      setResendCooldown(RESEND_COOLDOWN);
+      cooldownRef.current = setInterval(() => {
+        setResendCooldown((s) => {
+          if (s <= 1) {
+            clearInterval(cooldownRef.current!);
+            return 0;
+          }
+          return s - 1;
+        });
+      }, 1000);
     } catch (err: unknown) {
       setResendError(
         err instanceof Error ? err.message : "Failed to resend. Try again.",
@@ -256,39 +285,41 @@ export default function VerifyEmailPage() {
                 </div>
 
                 {/* Resend section */}
-                {accessToken && (
-                  <div className="border-t border-border/50 pt-4 space-y-2">
-                    <p className="text-xs text-muted-foreground">
-                      Didn't receive the email?
+                <div className="border-t border-border/50 pt-4 space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    Didn't receive the email?
+                  </p>
+                  {resent ? (
+                    <div className="flex items-center gap-1.5 text-xs text-accent font-medium">
+                      <CheckCircle2 size={12} />
+                      Verification email resent!
+                    </div>
+                  ) : resendCooldown > 0 ? (
+                    <p className="text-xs text-muted-foreground/60 font-mono">
+                      Resend available in {resendCooldown}s
                     </p>
-                    {resent ? (
-                      <div className="flex items-center gap-1.5 text-xs text-accent font-medium">
-                        <CheckCircle2 size={12} />
-                        Verification email resent!
-                      </div>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 text-xs gap-1.5"
-                        onClick={handleResend}
-                        disabled={resending}
-                      >
-                        <RefreshCw
-                          size={11}
-                          className={resending ? "animate-spin" : ""}
-                        />
-                        {resending ? "Sending…" : "Resend verification email"}
-                      </Button>
-                    )}
-                    {resendError && (
-                      <p className="text-xs text-destructive flex items-center gap-1.5">
-                        <AlertCircle size={11} />
-                        {resendError}
-                      </p>
-                    )}
-                  </div>
-                )}
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs gap-1.5"
+                      onClick={handleResend}
+                      disabled={resending || !accessToken}
+                    >
+                      <RefreshCw
+                        size={11}
+                        className={resending ? "animate-spin" : ""}
+                      />
+                      {resending ? "Sending…" : "Resend verification email"}
+                    </Button>
+                  )}
+                  {resendError && (
+                    <p className="text-xs text-destructive flex items-center gap-1.5">
+                      <AlertCircle size={11} />
+                      {resendError}
+                    </p>
+                  )}
+                </div>
 
                 <p className="text-center text-sm text-muted-foreground pt-2 border-t border-border/50">
                   Already verified?{" "}
