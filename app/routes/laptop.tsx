@@ -107,7 +107,7 @@ function Gallery({ images }: { images: LaptopImage[] }) {
 
   return (
     <>
-      <div className="space-y-3">
+      <div className="space-y-3 w-full min-w-0">
         <div className="relative aspect-video bg-muted rounded-2xl overflow-hidden group">
           <AnimatePresence mode="wait">
             <motion.img
@@ -165,22 +165,24 @@ function Gallery({ images }: { images: LaptopImage[] }) {
         </div>
 
         {images.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {images.map((img, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrent(i)}
-                aria-label={`Thumbnail ${i + 1}`}
-                className={`shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all duration-200 ${i === current ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"}`}
-              >
-                <img
-                  src={img.image}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </button>
-            ))}
+          <div className="w-full min-w-0 overflow-x-auto pb-1 scrollbar-none">
+            <div className="flex gap-2">
+              {images.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrent(i)}
+                  aria-label={`Thumbnail ${i + 1}`}
+                  className={`shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all duration-200 ${i === current ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"}`}
+                >
+                  <img
+                    src={img.image}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
