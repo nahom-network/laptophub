@@ -37,7 +37,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -174,6 +174,15 @@ export default function LoginPage() {
             </form>
 
             <p className="mt-6 text-center text-sm text-muted-foreground">
+              <Link
+                to="/forgot-password"
+                className="text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </p>
+
+            <p className="mt-3 text-center text-sm text-muted-foreground">
               Don&apos;t have an account?{" "}
               <Link
                 to="/register"

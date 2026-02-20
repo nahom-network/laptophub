@@ -8,7 +8,6 @@ import {
   Laptop,
   ChevronLeft,
   ChevronRight,
-  Star,
   HardDrive,
   Cpu,
   Monitor,
@@ -21,6 +20,8 @@ import {
   LogIn,
   LogOut,
   CheckCircle2,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -373,20 +374,36 @@ function SimilarCard({ item, index }: { item: SimilarItem; index: number }) {
 function ReviewForm({
   uuid,
   token,
+  existingReview,
   onSuccess,
+  onDelete,
 }: {
   uuid: string;
   token: string;
+  existingReview: Review | null;
   onSuccess: () => void;
+  onDelete: () => void;
 }) {
-  const [rating, setRating] = useState(0);
+  const isEditing = existingReview !== null;
+  const [editMode, setEditMode] = useState(false);
+  const [rating, setRating] = useState(existingReview?.rating ?? 0);
   const [hovered, setHovered] = useState(0);
-  const [comment, setComment] = useState("");
+  const [comment, setComment] = useState(existingReview?.comment ?? "");
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  // When existingReview changes (e.g. after refetch), sync form state
+  useEffect(() => {
+    if (existingReview) {
+      setRating(existingReview.rating);
+      setComment(existingReview.comment ?? "");
+    }
+  }, [existingReview]);
+
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!rating) {
       setError("Please select a star rating.");
@@ -395,11 +412,19 @@ function ReviewForm({
     setSubmitting(true);
     setError(null);
     try {
-      await api.reviews.create(uuid, token, {
-        rating,
-        comment: comment.trim() || undefined,
-      });
-      setDone(true);
+      if (isEditing) {
+        await api.reviews.updateMine(uuid, token, {
+          rating,
+          comment: comment.trim() || undefined,
+        });
+        setEditMode(false);
+      } else {
+        await api.reviews.create(uuid, token, {
+          rating,
+          comment: comment.trim() || undefined,
+        });
+        setDone(true);
+      }
       onSuccess();
     } catch (err: unknown) {
       setError(
@@ -407,6 +432,22 @@ function ReviewForm({
       );
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    setError(null);
+    try {
+      await api.reviews.deleteMine(uuid, token);
+      setConfirmDelete(false);
+      onDelete();
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Failed to delete. Try again.",
+      );
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -419,8 +460,130 @@ function ReviewForm({
     );
   }
 
+  // Show existing review with edit/delete controls
+  if (isEditing && !editMode) {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <span
+                  key={i}
+                  className={`text-sm leading-none ${
+                    i <= existingReview.rating
+                      ? "text-primary"
+                      : "text-foreground/15"
+                  }`}
+                >
+                  ★
+                </span>
+              ))}
+              <span className="ml-1.5 text-xs font-mono text-muted-foreground">
+                {
+                  ["Poor", "Fair", "Good", "Great", "Excellent"][
+                    existingReview.rating - 1
+                  ]
+                }
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setEditMode(true)}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-muted"
+                aria-label="Edit review"
+              >
+                <Pencil size={11} />
+                Edit
+              </button>
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="flex items-center gap-1 text-xs text-destructive/70 hover:text-destructive transition-colors px-2 py-1 rounded-lg hover:bg-destructive/8"
+                aria-label="Delete review"
+              >
+                <Trash2 size={11} />
+                Delete
+              </button>
+            </div>
+          </div>
+          {existingReview.comment && (
+            <p className="text-sm text-foreground/80 leading-relaxed">
+              {existingReview.comment}
+            </p>
+          )}
+          <p className="text-[10px] text-muted-foreground/50 font-mono">
+            Your review ·{" "}
+            {new Date(existingReview.created_at).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </p>
+        </div>
+
+        {confirmDelete && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 space-y-2">
+            <p className="text-xs text-destructive font-medium">
+              Delete your review? This cannot be undone.
+            </p>
+            {error && (
+              <p className="flex items-center gap-1.5 text-xs text-destructive">
+                <AlertCircle size={12} />
+                {error}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 text-xs px-3 gap-1"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                <Trash2 size={11} />
+                {deleting ? "Deleting…" : "Yes, delete"}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs px-3"
+                onClick={() => {
+                  setConfirmDelete(false);
+                  setError(null);
+                }}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {isEditing && (
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground font-medium">
+            Editing your review
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setEditMode(false);
+              setRating(existingReview.rating);
+              setComment(existingReview.comment ?? "");
+              setError(null);
+            }}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
       {/* Star selector */}
       <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((n) => (
@@ -468,7 +631,13 @@ function ReviewForm({
         className="gap-1.5"
       >
         <Send size={12} />
-        {submitting ? "Submitting…" : "Submit Review"}
+        {submitting
+          ? isEditing
+            ? "Saving…"
+            : "Submitting…"
+          : isEditing
+            ? "Save Changes"
+            : "Submit Review"}
       </Button>
     </form>
   );
@@ -487,6 +656,7 @@ export default function LaptopDetail() {
   const [laptop, setLaptop] = useState<LaptopPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [myReview, setMyReview] = useState<Review | null>(null);
   const navigate = useNavigate();
 
   const refetchLaptop = useCallback(() => {
@@ -496,6 +666,14 @@ export default function LaptopDetail() {
       .then(setLaptop)
       .catch(() => {});
   }, [uuid]);
+
+  const refetchMyReview = useCallback(() => {
+    if (!uuid || !accessToken) return;
+    api.reviews
+      .getMine(uuid, accessToken)
+      .then(setMyReview)
+      .catch(() => {});
+  }, [uuid, accessToken]);
 
   useEffect(() => {
     if (!uuid) return;
@@ -507,6 +685,18 @@ export default function LaptopDetail() {
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [uuid]);
+
+  // Fetch the current user's review when authenticated
+  useEffect(() => {
+    if (!uuid || !accessToken) {
+      setMyReview(null);
+      return;
+    }
+    api.reviews
+      .getMine(uuid, accessToken)
+      .then(setMyReview)
+      .catch(() => {});
+  }, [uuid, accessToken]);
 
   const channelId = laptop ? extractChannelId(laptop.channel) : null;
   const price = formatPrice(laptop?.price);
@@ -633,7 +823,7 @@ export default function LaptopDetail() {
 
   if (loading)
     return (
-      <div className="min-h-dvh flex flex-col bg-background font-sans">
+      <div className="min-h-dvh flex flex-col bg-background font-sans overflow-x-hidden">
         <Header />
         <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-10 w-full">
           <div className="grid lg:grid-cols-[1fr_360px] gap-10">
@@ -652,7 +842,7 @@ export default function LaptopDetail() {
 
   if (error || !laptop)
     return (
-      <div className="min-h-dvh flex flex-col bg-background font-sans">
+      <div className="min-h-dvh flex flex-col bg-background font-sans overflow-x-hidden">
         <Header />
         <main className="flex-1 flex items-center justify-center px-4">
           <div className="text-center">
@@ -680,13 +870,13 @@ export default function LaptopDetail() {
   const isSold = laptop.status?.toLowerCase().includes("sold");
 
   return (
-    <div className="min-h-dvh flex flex-col bg-background font-sans">
+    <div className="min-h-dvh flex flex-col bg-background font-sans overflow-x-hidden">
       <Header />
       <motion.main
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-        className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-10 w-full"
+        className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-10 w-full min-w-0"
       >
         <div className="grid lg:grid-cols-[1fr_340px] gap-10 xl:gap-14">
           {/*  Left  */}
@@ -734,13 +924,21 @@ export default function LaptopDetail() {
               {/* Write a review */}
               <div>
                 <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">
-                  Write a Review
+                  {myReview ? "Your Review" : "Write a Review"}
                 </h2>
                 {isAuthenticated ? (
                   <ReviewForm
                     uuid={uuid!}
                     token={accessToken!}
-                    onSuccess={refetchLaptop}
+                    existingReview={myReview}
+                    onSuccess={() => {
+                      refetchLaptop();
+                      refetchMyReview();
+                    }}
+                    onDelete={() => {
+                      setMyReview(null);
+                      refetchLaptop();
+                    }}
                   />
                 ) : (
                   <p className="text-sm text-muted-foreground">

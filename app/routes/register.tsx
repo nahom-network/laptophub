@@ -47,7 +47,7 @@ export default function RegisterPage() {
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -59,7 +59,9 @@ export default function RegisterPage() {
         phone_number: form.phone_number || undefined,
         password: form.password,
       });
-      navigate("/login?registered=1", { replace: true });
+      navigate(`/verify-email?email=${encodeURIComponent(form.email)}`, {
+        replace: true,
+      });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registration failed.");
     } finally {

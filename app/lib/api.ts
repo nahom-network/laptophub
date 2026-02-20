@@ -142,6 +142,42 @@ async function deleteJSON(path: string, token: string): Promise<void> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
+async function patchJSON<T>(
+  path: string,
+  body: unknown,
+  token: string,
+  method: "PUT" | "PATCH" = "PATCH",
+): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    const firstMsg =
+      Object.values(err)
+        .flat()
+        .find((v): v is string => typeof v === "string") ??
+      `HTTP ${res.status}`;
+    throw new Error(firstMsg);
+  }
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
+}
+
+async function getJSONAuth<T>(path: string, token: string): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 404) return null as T;
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
 export const api = {
   laptops: {
     list: (page = 1, q = "") => {
@@ -171,6 +207,21 @@ export const api = {
       postJSON<{ email: string }>("/auth/register/", data),
     login: (email: string, password: string) =>
       postJSON<TokenResponse>("/token/", { email, password }),
+    changePassword: (
+      token: string,
+      data: { old_password: string; new_password: string },
+    ) => postJSON<void>("/auth/password/change/", data, token),
+    requestPasswordReset: (email: string) =>
+      postJSON<void>("/auth/password/reset/request/", { email }),
+    confirmPasswordReset: (data: {
+      token: string;
+      uid: string;
+      new_password: string;
+    }) => postJSON<void>("/auth/password/reset/confirm/", data),
+    verifyEmail: (token: string) =>
+      postJSON<void>("/auth/email/verify/", { token }),
+    resendVerification: (accessToken: string) =>
+      postJSON<void>("/auth/email/resend/", {}, accessToken),
   },
   reviews: {
     create: (
@@ -180,5 +231,15 @@ export const api = {
     ) => postJSON<Review>(`/laptops/${uuid}/reviews/`, data, token),
     destroy: (id: number, token: string) =>
       deleteJSON(`/reviews/${id}/`, token),
+    // New: manage your own review via product UUID
+    getMine: (uuid: string, token: string) =>
+      getJSONAuth<Review | null>(`/laptops/${uuid}/reviews/mine/`, token),
+    updateMine: (
+      uuid: string,
+      token: string,
+      data: { rating: number; comment?: string },
+    ) => patchJSON<Review>(`/laptops/${uuid}/reviews/mine/`, data, token),
+    deleteMine: (uuid: string, token: string) =>
+      deleteJSON(`/laptops/${uuid}/reviews/mine/`, token),
   },
 };

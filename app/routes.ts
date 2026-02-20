@@ -6,4 +6,7 @@ export default [
   route("channels/:id", "routes/channel.tsx"),
   route("login", "routes/login.tsx"),
   route("register", "routes/register.tsx"),
+  route("forgot-password", "routes/forgot-password.tsx"),
+  route("reset-password", "routes/reset-password.tsx"),
+  route("verify-email", "routes/verify-email.tsx"),
 ] satisfies RouteConfig;
