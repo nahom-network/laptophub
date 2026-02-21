@@ -95,7 +95,13 @@ function extractChannelId(channelUrl?: string | null): string | null {
 /*  Image Gallery  */
 function Gallery({ images }: { images: LaptopImage[] }) {
   const [current, setCurrent] = useState(0);
+  const [direction, setDirection] = useState(0);
   const [lightbox, setLightbox] = useState(false);
+
+  const paginate = (newDirection: number) => {
+    setDirection(newDirection);
+    setCurrent((c) => (c + newDirection + images.length) % images.length);
+  };
 
   if (!images.length) {
     return (
@@ -105,20 +111,53 @@ function Gallery({ images }: { images: LaptopImage[] }) {
     );
   }
 
+  const variants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? 300 : -300,
+      opacity: 0,
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1,
+    },
+    exit: (direction: number) => ({
+      zIndex: 0,
+      x: direction < 0 ? 300 : -300,
+      opacity: 0,
+    }),
+  };
+
   return (
     <>
       <div className="space-y-3 w-full min-w-0">
         <div className="relative aspect-video bg-muted rounded-2xl overflow-hidden group">
-          <AnimatePresence mode="wait">
+          <AnimatePresence initial={false} custom={direction}>
             <motion.img
               key={current}
               src={images[current].image}
               alt={`Photo ${current + 1}`}
-              className="w-full h-full object-contain cursor-zoom-in"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              className="absolute inset-0 w-full h-full object-contain cursor-zoom-in"
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: "spring", stiffness: 300, damping: 30 },
+                opacity: { duration: 0.2 },
+              }}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={1}
+              onDragEnd={(e, { offset }) => {
+                const swipe = offset.x;
+                if (swipe < -50) {
+                  paginate(1);
+                } else if (swipe > 50) {
+                  paginate(-1);
+                }
+              }}
               onClick={() => setLightbox(true)}
             />
           </AnimatePresence>
@@ -127,7 +166,7 @@ function Gallery({ images }: { images: LaptopImage[] }) {
           <button
             onClick={() => setLightbox(true)}
             aria-label="View full size"
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-background/70 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-background/70 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
           >
             <ZoomIn size={14} />
           </button>
@@ -135,26 +174,27 @@ function Gallery({ images }: { images: LaptopImage[] }) {
           {images.length > 1 && (
             <>
               <button
-                onClick={() =>
-                  setCurrent((c) => (c - 1 + images.length) % images.length)
-                }
+                onClick={() => paginate(-1)}
                 aria-label="Previous"
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/80 backdrop-blur flex items-center justify-center shadow-sm hover:bg-background transition-colors opacity-0 group-hover:opacity-100"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/80 backdrop-blur flex items-center justify-center shadow-sm hover:bg-background transition-colors opacity-0 group-hover:opacity-100 z-10"
               >
                 <ChevronLeft size={15} />
               </button>
               <button
-                onClick={() => setCurrent((c) => (c + 1) % images.length)}
+                onClick={() => paginate(1)}
                 aria-label="Next"
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/80 backdrop-blur flex items-center justify-center shadow-sm hover:bg-background transition-colors opacity-0 group-hover:opacity-100"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/80 backdrop-blur flex items-center justify-center shadow-sm hover:bg-background transition-colors opacity-0 group-hover:opacity-100 z-10"
               >
                 <ChevronRight size={15} />
               </button>
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
                 {images.map((_, i) => (
                   <button
                     key={i}
-                    onClick={() => setCurrent(i)}
+                    onClick={() => {
+                      setDirection(i > current ? 1 : -1);
+                      setCurrent(i);
+                    }}
                     aria-label={`Image ${i + 1}`}
                     className={`rounded-full transition-all duration-200 ${i === current ? "w-5 h-1.5 bg-primary" : "w-1.5 h-1.5 bg-foreground/30"}`}
                   />
@@ -170,7 +210,10 @@ function Gallery({ images }: { images: LaptopImage[] }) {
               {images.map((img, i) => (
                 <button
                   key={i}
-                  onClick={() => setCurrent(i)}
+                  onClick={() => {
+                    setDirection(i > current ? 1 : -1);
+                    setCurrent(i);
+                  }}
                   aria-label={`Thumbnail ${i + 1}`}
                   className={`shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all duration-200 ${i === current ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"}`}
                 >
@@ -199,19 +242,64 @@ function Gallery({ images }: { images: LaptopImage[] }) {
           >
             <button
               aria-label="Close"
-              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors z-50"
             >
               <ArrowLeft size={18} className="rotate-135" />
             </button>
-            <motion.img
-              initial={{ scale: 0.92, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
-              src={images[current].image}
-              alt=""
-              className="max-w-full max-h-full object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()}
-            />
+            <AnimatePresence initial={false} custom={direction}>
+              <motion.img
+                key={current}
+                custom={direction}
+                variants={variants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{
+                  x: { type: "spring", stiffness: 300, damping: 30 },
+                  opacity: { duration: 0.2 },
+                }}
+                src={images[current].image}
+                alt=""
+                className="absolute inset-0 m-auto max-w-full max-h-full object-contain rounded-lg p-4"
+                onClick={(e) => e.stopPropagation()}
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={1}
+                onDragEnd={(e, { offset }) => {
+                  const swipe = offset.x;
+                  if (swipe < -50) {
+                    paginate(1);
+                  } else if (swipe > 50) {
+                    paginate(-1);
+                  }
+                }}
+              />
+            </AnimatePresence>
+
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    paginate(-1);
+                  }}
+                  aria-label="Previous"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors z-50"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    paginate(1);
+                  }}
+                  aria-label="Next"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors z-50"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

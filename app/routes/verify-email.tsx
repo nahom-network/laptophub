@@ -11,7 +11,6 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 
@@ -48,8 +47,6 @@ export default function VerifyEmailPage() {
   const uidParam = searchParams.get("uid") ?? "";
   const emailParam = searchParams.get("email") ?? "";
 
-  const [manualToken, setManualToken] = useState(tokenParam ?? "");
-  const [manualUid, setManualUid] = useState(uidParam ?? "");
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
@@ -90,24 +87,6 @@ export default function VerifyEmailPage() {
       )
       .finally(() => setVerifying(false));
   }, [tokenParam, uidParam]);
-
-  async function handleManualVerify(e: React.SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setVerifying(true);
-    setVerifyError(null);
-    try {
-      await api.auth.verifyEmail(manualUid.trim(), manualToken.trim());
-      setVerified(true);
-    } catch (err: unknown) {
-      setVerifyError(
-        err instanceof Error
-          ? err.message
-          : "Verification failed. The token may be invalid or expired.",
-      );
-    } finally {
-      setVerifying(false);
-    }
-  }
 
   async function handleResend() {
     if (!accessToken) return;
@@ -229,17 +208,8 @@ export default function VerifyEmailPage() {
                   </div>
                 </div>
                 <p className="text-xs text-center text-muted-foreground">
-                  Enter your token manually below, or request a new link.
+                  Please request a new link.
                 </p>
-                <ManualTokenForm
-                  uid={manualUid}
-                  setUid={setManualUid}
-                  token={manualToken}
-                  setToken={setManualToken}
-                  onSubmit={handleManualVerify}
-                  verifying={verifying}
-                  error={null}
-                />
               </div>
             )}
 
@@ -266,22 +236,6 @@ export default function VerifyEmailPage() {
                       . Click it to activate your account.
                     </p>
                   </div>
-                </div>
-
-                {/* Manual token entry */}
-                <div>
-                  <p className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-3">
-                    Or enter your token
-                  </p>
-                  <ManualTokenForm
-                    uid={manualUid}
-                    setUid={setManualUid}
-                    token={manualToken}
-                    setToken={setManualToken}
-                    onSubmit={handleManualVerify}
-                    verifying={verifying}
-                    error={verifyError}
-                  />
                 </div>
 
                 {/* Resend section */}
@@ -336,62 +290,5 @@ export default function VerifyEmailPage() {
         </motion.div>
       </main>
     </div>
-  );
-}
-
-function ManualTokenForm({
-  uid,
-  setUid,
-  token,
-  setToken,
-  onSubmit,
-  verifying,
-  error,
-}: {
-  uid: string;
-  setUid: (v: string) => void;
-  token: string;
-  setToken: (v: string) => void;
-  onSubmit: (e: React.SyntheticEvent<HTMLFormElement>) => void;
-  verifying: boolean;
-  error: string | null;
-}) {
-  return (
-    <form onSubmit={onSubmit} className="space-y-3">
-      <Input
-        type="text"
-        value={uid}
-        onChange={(e) => setUid(e.target.value)}
-        placeholder="Paste UID from link"
-        className="h-10 bg-muted/40 border-border/60 focus:border-primary/50 font-mono text-sm"
-        required
-      />
-      <Input
-        type="text"
-        value={token}
-        onChange={(e) => setToken(e.target.value)}
-        placeholder="Paste verification token"
-        className="h-10 bg-muted/40 border-border/60 focus:border-primary/50 font-mono text-sm"
-        required
-      />
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 text-xs text-destructive bg-destructive/8 px-3 py-2.5 rounded-lg border border-destructive/20"
-        >
-          <AlertCircle size={13} className="shrink-0" />
-          {error}
-        </motion.div>
-      )}
-      <Button
-        type="submit"
-        size="sm"
-        className="w-full h-9 font-semibold"
-        disabled={verifying || !uid.trim() || !token.trim()}
-      >
-        {verifying ? "Verifying…" : "Verify email"}
-      </Button>
-    </form>
   );
 }
