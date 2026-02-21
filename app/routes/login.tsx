@@ -62,7 +62,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col bg-background font-sans">
+    <div className="min-h-dvh flex flex-col bg-background font-sans overflow-x-hidden">
       {/* Header */}
       <header className="border-b border-border/60 bg-background/75 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
@@ -97,7 +97,7 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="w-full max-w-sm"
+          className="w-full max-w-sm min-w-0"
         >
           {/* Card */}
           <div className="rounded-2xl border border-border/60 bg-card p-8 shadow-sm">

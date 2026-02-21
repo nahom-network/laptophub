@@ -377,14 +377,14 @@ export default function Home() {
   const chPages = chatData ? Math.ceil(chatData.count / 12) : 1;
 
   return (
-    <div className="min-h-dvh flex flex-col bg-background font-sans">
+    <div className="min-h-dvh flex flex-col bg-background font-sans overflow-x-hidden">
       {/*  HEADER  */}
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/75 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-2 sm:gap-4 min-w-0">
           {/* Logo */}
           <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
           >
             <Link
@@ -409,7 +409,7 @@ export default function Home() {
                 initial={{ opacity: 0, width: 0 }}
                 animate={{ opacity: 1, width: "auto" }}
                 exit={{ opacity: 0, width: 0 }}
-                className="flex-1 max-w-sm"
+                className="flex-1 min-w-0 max-w-sm"
               >
                 <div className="relative">
                   <Search

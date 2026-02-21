@@ -259,11 +259,11 @@ export const api = {
       postJSON<void>("/auth/email/resend/", {}, accessToken),
   },
   profile: {
-    get: (token: string) => getJSONAuth<UserProfile>("/users/profile/", token),
+    get: (token: string) => getJSONAuth<UserProfile>("/auth/profile/", token),
     update: (token: string, data: FormData) =>
-      patchFormData<UserProfile>("/users/profile/", data, token),
+      patchFormData<UserProfile>("/auth/profile/", data, token),
     deleteAccount: (token: string) =>
-      deleteJSON("/users/profile/delete/", token),
+      deleteJSON("/auth/profile/delete/", token),
   },
   reviews: {
     create: (

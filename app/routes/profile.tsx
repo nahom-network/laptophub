@@ -228,7 +228,7 @@ export default function ProfilePage() {
   if (!accessToken) return null;
 
   return (
-    <div className="min-h-dvh flex flex-col bg-background font-sans">
+    <div className="min-h-dvh flex flex-col bg-background font-sans overflow-x-hidden">
       {/* Header */}
       <header className="border-b border-border/60 bg-background/75 backdrop-blur-xl sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
@@ -271,7 +271,7 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-10 space-y-6">
+      <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-10 space-y-6 min-w-0">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -307,7 +307,7 @@ export default function ProfilePage() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -340,7 +340,7 @@ export default function ProfilePage() {
           {/* ── Profile card ─────────────────────────────────────────── */}
           <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
             {/* Avatar & name header */}
-            <div className="px-6 pt-6 pb-5 border-b border-border/50 flex items-center gap-4">
+            <div className="px-4 sm:px-6 pt-6 pb-5 border-b border-border/50 flex items-center gap-3 sm:gap-4 min-w-0">
               <div className="relative">
                 <div className="w-16 h-16 rounded-full bg-muted border border-border/60 overflow-hidden flex items-center justify-center">
                   {avatarUrl ? (
@@ -370,12 +370,12 @@ export default function ProfilePage() {
                   onChange={handleAvatarChange}
                 />
               </div>
-              <div>
-                <h1 className="font-display text-lg font-bold leading-snug">
+              <div className="min-w-0 flex-1">
+                <h1 className="font-display text-lg font-bold leading-snug truncate">
                   {displayName}
                 </h1>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 mt-0.5 min-w-0">
+                  <p className="text-xs text-muted-foreground truncate min-w-0">
                     {profile?.email}
                   </p>
                   {profile?.is_verified ? (
@@ -394,7 +394,10 @@ export default function ProfilePage() {
             </div>
 
             {/* Profile form */}
-            <form onSubmit={handleSaveProfile} className="px-6 py-5 space-y-4">
+            <form
+              onSubmit={handleSaveProfile}
+              className="px-4 sm:px-6 py-5 space-y-4"
+            >
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
@@ -491,7 +494,7 @@ export default function ProfilePage() {
           <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
             <button
               type="button"
-              className="w-full px-6 py-4 flex items-center justify-between text-left"
+              className="w-full px-4 sm:px-6 py-4 flex items-center justify-between text-left"
               onClick={() => setShowPwSection((v) => !v)}
             >
               <div className="flex items-center gap-2.5">
@@ -514,10 +517,10 @@ export default function ProfilePage() {
                   transition={{ duration: 0.25, ease: "easeInOut" }}
                   className="overflow-hidden"
                 >
-                  <Separator className="mx-6 w-auto" />
+                  <Separator className="mx-4 sm:mx-6 w-auto" />
                   <form
                     onSubmit={handleChangePassword}
-                    className="px-6 py-5 space-y-4"
+                    className="px-4 sm:px-6 py-5 space-y-4"
                   >
                     <PasswordField
                       id="old-password"
@@ -595,7 +598,7 @@ export default function ProfilePage() {
 
           {/* ── Danger zone ───────────────────────────────────────────── */}
           <div className="rounded-2xl border border-destructive/25 bg-card shadow-sm overflow-hidden">
-            <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <p className="font-medium text-sm text-foreground">
                   Delete account
