@@ -54,12 +54,15 @@ export default function ProfilePage() {
   const { accessToken, profile, refreshProfile, logout } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect to login if not authenticated
+  // Redirect to login only if not authenticated and no profile
   useEffect(() => {
-    if (!accessToken) {
+    if (!accessToken && !profile) {
       navigate("/login", { replace: true });
     }
-  }, [accessToken, navigate]);
+  }, [accessToken, profile, navigate]);
+
+  // Profile edit mode
+  const [editMode, setEditMode] = useState(false);
 
   // ── Profile form ──────────────────────────────────────────────────────────
   const [firstName, setFirstName] = useState(profile?.first_name ?? "");
@@ -353,14 +356,16 @@ export default function ProfilePage() {
                     <User size={28} className="text-muted-foreground/50" />
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors shadow-sm"
-                  aria-label="Change avatar"
-                >
-                  <Camera size={11} className="text-primary-foreground" />
-                </button>
+                {editMode && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors shadow-sm"
+                    aria-label="Change avatar"
+                  >
+                    <Camera size={11} className="text-primary-foreground" />
+                  </button>
+                )}
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -368,12 +373,40 @@ export default function ProfilePage() {
                   className="hidden"
                   aria-label="Upload profile picture"
                   onChange={handleAvatarChange}
+                  disabled={!editMode}
                 />
               </div>
               <div className="min-w-0 flex-1">
-                <h1 className="font-display text-lg font-bold leading-snug truncate">
-                  {displayName}
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="font-display text-lg font-bold leading-snug truncate">
+                    {displayName}
+                  </h1>
+                  <button
+                    type="button"
+                    className="ml-1 p-1 rounded-full hover:bg-muted transition-colors"
+                    aria-label={editMode ? "Cancel editing" : "Edit profile"}
+                    onClick={() => setEditMode((v) => !v)}
+                  >
+                    {editMode ? (
+                      <Save size={15} className="text-primary" />
+                    ) : (
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="lucide lucide-pencil text-muted-foreground"
+                      >
+                        <path d="M18 2a2.828 2.828 0 0 1 4 4l-14 14-4 1 1-4Z" />
+                        <path d="m16 5 3 3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
                 <div className="flex items-center gap-2 mt-0.5 min-w-0">
                   <p className="text-xs text-muted-foreground truncate min-w-0">
                     {profile?.email}
@@ -408,6 +441,7 @@ export default function ProfilePage() {
                     onChange={(e) => setFirstName(e.target.value)}
                     placeholder="First name"
                     className="h-10 bg-muted/40 border-border/60 focus:border-primary/50"
+                    disabled={!editMode}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -419,6 +453,7 @@ export default function ProfilePage() {
                     onChange={(e) => setLastName(e.target.value)}
                     placeholder="Last name"
                     className="h-10 bg-muted/40 border-border/60 focus:border-primary/50"
+                    disabled={!editMode}
                   />
                 </div>
               </div>
@@ -437,6 +472,7 @@ export default function ProfilePage() {
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+251 9XX XXX XXX"
                     className="h-10 pl-8 bg-muted/40 border-border/60 focus:border-primary/50"
+                    disabled={!editMode}
                   />
                 </div>
               </div>
@@ -451,6 +487,7 @@ export default function ProfilePage() {
                   placeholder="Tell us a little about yourself…"
                   rows={3}
                   className="w-full rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 resize-none"
+                  disabled={!editMode}
                 />
               </div>
 
@@ -479,14 +516,16 @@ export default function ProfilePage() {
                 )}
               </AnimatePresence>
 
-              <Button
-                type="submit"
-                className="w-full h-10 font-semibold gap-2"
-                disabled={saving}
-              >
-                <Save size={14} />
-                {saving ? "Saving…" : "Save changes"}
-              </Button>
+              {editMode && (
+                <Button
+                  type="submit"
+                  className="w-full h-10 font-semibold gap-2"
+                  disabled={saving}
+                >
+                  <Save size={14} />
+                  {saving ? "Saving…" : "Save changes"}
+                </Button>
+              )}
             </form>
           </div>
 
