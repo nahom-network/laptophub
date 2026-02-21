@@ -42,8 +42,16 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      await login(email, password);
-      navigate("/", { replace: true });
+      const profile = await login(email, password);
+      // login() fetches profile; read it from context after state settles
+      // We navigate optimistically; if unverified the user will see a banner on profile
+      if (profile && !profile.is_verified) {
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`, {
+          replace: true,
+        });
+      } else {
+        navigate("/", { replace: true });
+      }
     } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : "Invalid email or password.",

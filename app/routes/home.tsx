@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Zap,
   SlidersHorizontal,
+  User,
 } from "lucide-react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -29,6 +30,7 @@ import {
   type Chat,
   type PaginatedChatList,
 } from "../lib/api";
+import { useAuth } from "../lib/auth";
 
 export function meta() {
   return [
@@ -304,6 +306,7 @@ function ChannelCard({ chat, index }: { chat: Chat; index: number }) {
 /*  Main  */
 export default function Home() {
   const { dark, toggle: toggleDark } = useDarkMode();
+  const { isAuthenticated, profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const tab = (searchParams.get("tab") as "laptops" | "channels") ?? "laptops";
@@ -455,6 +458,39 @@ export default function Home() {
               >
                 {laptopData.count.toLocaleString()} listings
               </motion.span>
+            )}
+            {isAuthenticated ? (
+              <Link to="/profile">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full relative"
+                  aria-label="Profile"
+                >
+                  {profile?.profile_picture ? (
+                    <img
+                      src={profile.profile_picture}
+                      alt="avatar"
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <User size={15} />
+                  )}
+                  {profile && !profile.is_verified && (
+                    <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-amber-500 border border-background" />
+                  )}
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/login">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs font-medium"
+                >
+                  Sign in
+                </Button>
+              </Link>
             )}
             <Button
               variant="ghost"

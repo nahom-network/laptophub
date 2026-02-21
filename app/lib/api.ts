@@ -96,6 +96,18 @@ export interface RegisterData {
   password: string;
 }
 
+export interface UserProfile {
+  id: number;
+  email: string;
+  is_verified: boolean;
+  date_joined: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  profile_picture: string | null;
+  bio: string;
+}
+
 export interface TokenResponse {
   access: string;
   refresh: string;
@@ -169,6 +181,29 @@ async function patchJSON<T>(
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
+async function patchFormData<T>(
+  path: string,
+  body: FormData,
+  token: string,
+): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    body,
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    const firstMsg =
+      Object.values(err)
+        .flat()
+        .find((v): v is string => typeof v === "string") ??
+      `HTTP ${res.status}`;
+    throw new Error(firstMsg);
+  }
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
+}
+
 async function getJSONAuth<T>(path: string, token: string): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -222,6 +257,13 @@ export const api = {
       postJSON<void>("/auth/email/verify/", { uid, token }),
     resendVerification: (accessToken: string) =>
       postJSON<void>("/auth/email/resend/", {}, accessToken),
+  },
+  profile: {
+    get: (token: string) => getJSONAuth<UserProfile>("/users/profile/", token),
+    update: (token: string, data: FormData) =>
+      patchFormData<UserProfile>("/users/profile/", data, token),
+    deleteAccount: (token: string) =>
+      deleteJSON("/users/profile/delete/", token),
   },
   reviews: {
     create: (
